@@ -38,6 +38,7 @@ pub enum Expression {
 #[derive(Debug, Clone)]
 pub enum Term {
     Number(i32),
+    String(String),
     Variable(String),
     Table,
 }

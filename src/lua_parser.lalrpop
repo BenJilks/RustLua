@@ -66,9 +66,11 @@ Tier<Op, NextTier>: Box<Expression> = {
 
 Term: Box<Expression> = {
     <n:Number> => Box::new(Expression::Term(Term::Number(n))),
+    <s:String> => Box::new(Expression::Term(Term::String(s))),
     <v:Identifier> => Box::new(Expression::Term(Term::Variable(v))),
     "{" "}" => Box::new(Expression::Term(Term::Table))
 }
 
 Number: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
+String: String = <s:r#"".*""#> => s[1..s.len()-1].to_owned();
 Identifier: String = <s:r"[a-zA-Z_][a-zA-Z0-9_]*"> => s.to_owned();

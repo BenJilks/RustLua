@@ -32,6 +32,7 @@ fn main() {
             match argument {
                 Value::Nil => print!("<nil> "),
                 Value::Number(n) => print!("{} ", n),
+                Value::String(s) => print!("{} ", s),
                 Value::Table(table) => print!("{:?} ", table.borrow()),
                 Value::Function(_, _) => print!("<function> "),
                 Value::NativeFunction(_) => print!("<native function> "),

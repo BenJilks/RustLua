@@ -13,6 +13,7 @@ pub enum Index {
 pub enum Value {
     Nil,
     Number(i32),
+    String(String),
     Function(Vec<String>, Vec<Statement>),
     NativeFunction(fn(Vec<Value>) -> Value),
     Table(Rc<RefCell<HashMap<Index, Value>>>),
@@ -154,6 +155,7 @@ impl Interpreter {
         let evaluated_index = self.execute_expression(local_scope, index);
         match evaluated_index {
             Value::Number(n) => Index::Number(n),
+            Value::String(s) => Index::Name(s),
             _ => todo!("Throw error"),
         }
     }
@@ -167,10 +169,12 @@ impl Interpreter {
             Value::Number(lhs_n) => match rhs {
                 Value::Nil => Value::Nil,
                 Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
+                Value::String(_) => Value::Nil,
                 Value::Table(_) => Value::Nil,
                 Value::Function(_, _) => Value::Nil,
                 Value::NativeFunction(_) => Value::Nil,
             },
+            Value::String(_) => Value::Nil,
             Value::Table(_) => Value::Nil,
             Value::Function(_, _) => Value::Nil,
             Value::NativeFunction(_) => Value::Nil,
@@ -180,6 +184,7 @@ impl Interpreter {
     fn execute_term(&mut self, local_scope: &mut Scope, term: &Term) -> Value {
         match term {
             Term::Number(n) => Value::Number(*n),
+            Term::String(s) => Value::String(s.to_owned()),
             Term::Variable(identifier) => self.get(&local_scope, identifier).unwrap_or(&Value::Nil).clone(),
             Term::Table => self.execute_construct_table(),
         }
