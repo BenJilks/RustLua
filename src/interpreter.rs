@@ -7,6 +7,7 @@ pub enum Value {
     Number(i32),
     Function(Vec<String>, Vec<Statement>),
     NativeFunction(fn(Vec<Value>) -> Value),
+    Table,
 }
 
 type Scope = HashMap<String, Value>;
@@ -89,9 +90,11 @@ impl Interpreter {
             Value::Number(lhs_n) => match rhs {
                 Value::Nil => Value::Nil,
                 Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
+                Value::Table => Value::Nil,
                 Value::Function(_, _) => Value::Nil,
                 Value::NativeFunction(_) => Value::Nil,
             },
+            Value::Table => Value::Nil,
             Value::Function(_, _) => Value::Nil,
             Value::NativeFunction(_) => Value::Nil,
         }
@@ -102,7 +105,12 @@ impl Interpreter {
             Term::Number(n) => Value::Number(*n),
             Term::Variable(identifier) => self.get(&local_scope, identifier).unwrap_or(&Value::Nil).clone(),
             Term::Call(callee, arguments) => self.execute_call(local_scope, callee, arguments),
+            Term::Table => self.execute_construct_table(),
         }
+    }
+
+    fn execute_construct_table(&mut self) -> Value {
+        Value::Table
     }
 
     fn execute_call<'a>(&mut self,
@@ -111,7 +119,7 @@ impl Interpreter {
                         arguments: &Vec<Box<Expression>>) -> Value {
         let evaluated_callee_or_none = self.get(&local_scope, callee);
         if evaluated_callee_or_none.is_none() {
-            return Value::Nil;
+            todo!("Throw error");
         }
 
         let evaluated_callee = evaluated_callee_or_none.unwrap().clone();
@@ -122,7 +130,7 @@ impl Interpreter {
             Value::Function(parameters, body) =>
                 self.execute_function_call(local_scope, arguments, parameters, body),
 
-            _ => Value::Nil,
+            _ => todo!("Throw error"),
         }
     }
 

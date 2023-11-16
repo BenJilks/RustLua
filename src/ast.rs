@@ -36,4 +36,5 @@ pub enum Term {
     Number(i32),
     Variable(String),
     Call(String, Vec<Box<Expression>>),
+    Table,
 }

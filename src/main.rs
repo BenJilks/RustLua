@@ -15,12 +15,7 @@ fn main() {
     // ";
 
     let test_program = r"
-        function test(a, b)
-            local x = 1
-            return a + b + x
-        end
-
-        print(test(1, 2))
+        x = {}
         print(x)
     ";
 
@@ -31,8 +26,9 @@ fn main() {
     interpreter.define("print", |arguments| {
         for argument in arguments {
             match argument {
-                Value::Number(n) => print!("{} ", n),
                 Value::Nil => print!("<nil> "),
+                Value::Number(n) => print!("{} ", n),
+                Value::Table => print!("{{}} "),
                 Value::Function(_, _) => print!("<function> "),
                 Value::NativeFunction(_) => print!("<native function> "),
             }
