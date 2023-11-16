@@ -1,0 +1,64 @@
+use std::str::FromStr;
+use crate::ast::{Program, Function, Statement, Expression, Term, Operation};
+
+grammar;
+
+pub Program: Program = {
+    <body: (<Statement>)*> => body,
+}
+
+Statement: Statement = {
+    "return" <e:Expression> => Statement::Return(e),
+    "local" <name:Identifier> "=" <value:Expression> => Statement::Local(<>),
+    "function" <name:Identifier> "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
+        Statement::Function(Function { name, parameters, body }),
+
+    <e:Expression> => Statement::Expression(e),
+}
+
+ParameterList: Vec<String> = {
+    <parameters: (<Identifier> ",")*> <last:Identifier?> => {
+        let mut parameters = parameters;
+        parameters.extend(last);
+        parameters
+    },
+}
+
+Expression: Box<Expression> = {
+    <i:Identifier> "=" <v:ArithmaticExpression> => Box::new(Expression::Assignment(<>)),
+    <a:ArithmaticExpression> => a,
+}
+
+ArithmaticExpression = Tier<ExpressionOperation, Factor>;
+ExpressionOperation: Operation = {
+    "+" => Operation::Add,
+    "-" => Operation::Subtract,
+}
+
+Factor = Tier<FactorOperation, Term>;
+FactorOperation: Operation = {
+    "*" => Operation::Multiply,
+    "/" => Operation::Divide,
+}
+
+Tier<Op, NextTier>: Box<Expression> = {
+    Tier<Op, NextTier> Op NextTier => Box::new(Expression::Binary(<>)),
+    NextTier
+}
+
+Term: Box<Expression> = {
+    <n:Number> => Box::new(Expression::Term(Term::Number(n))),
+    <v:Identifier> => Box::new(Expression::Term(Term::Variable(v))),
+    <v:Identifier> "(" <arguments: ArgumentList> ")" => Box::new(Expression::Term(Term::Call(<>))),
+}
+
+ArgumentList: Vec<Box<Expression>> = {
+    <arguments: (<Expression> ",")*> <last: Expression?> => {
+        let mut arguments = arguments;
+        arguments.extend(last);
+        arguments
+    }
+}
+
+Number: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
+Identifier: String = <s:r"[a-zA-Z_][a-zA-Z0-9_]*"> => s.to_owned();
