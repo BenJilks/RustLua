@@ -25,7 +25,7 @@ ParameterList: Vec<String> = {
 }
 
 Expression: Box<Expression> = {
-    <i:Identifier> "=" <v:ArithmaticExpression> => Box::new(Expression::Assignment(<>)),
+    <i:Expression> "=" <v:ArithmaticExpression> => Box::new(Expression::Assignment(<>)),
     <a:ArithmaticExpression> => a,
 }
 

@@ -28,7 +28,7 @@ pub enum Operation {
 pub enum Expression {
     Term(Term),
     Binary(Box<Expression>, Operation, Box<Expression>),
-    Assignment(String, Box<Expression>),
+    Assignment(Box<Expression>, Box<Expression>),
     Dot(Box<Expression>, String),
     Index(Box<Expression>, Box<Expression>),
 }

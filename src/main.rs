@@ -16,7 +16,9 @@ fn main() {
 
     let test_program = r"
         x = {}
-        print(x.y[1])
+        x.y = 2
+        x[1] = 21
+        print(x.y, x[1])
     ";
 
     let parser = lua_parser::ProgramParser::new();
@@ -29,7 +31,7 @@ fn main() {
             match argument {
                 Value::Nil => print!("<nil> "),
                 Value::Number(n) => print!("{} ", n),
-                Value::Table => print!("{{}} "),
+                Value::Table(table) => print!("{:?} ", table.borrow()),
                 Value::Function(_, _) => print!("<function> "),
                 Value::NativeFunction(_) => print!("<native function> "),
             }

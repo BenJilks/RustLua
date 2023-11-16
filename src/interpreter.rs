@@ -1,5 +1,13 @@
 use crate::ast::{Program, Statement, Expression, Term, Operation, Function};
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Index {
+    Name(String),
+    Number(i32),
+}
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -7,7 +15,7 @@ pub enum Value {
     Number(i32),
     Function(Vec<String>, Vec<Statement>),
     NativeFunction(fn(Vec<Value>) -> Value),
-    Table,
+    Table(Rc<RefCell<HashMap<Index, Value>>>),
 }
 
 type Scope = HashMap<String, Value>;
@@ -73,14 +81,80 @@ impl Interpreter {
                 }
             },
 
-            Expression::Assignment(name, value) => {
-                let evaluated_value = self.execute_expression(local_scope, value);
+            Expression::Assignment(lhs, rhs) => self.execute_assign(local_scope, lhs, rhs),
+            Expression::Dot(value, name) => self.execute_dot_operation(local_scope, value, name),
+            Expression::Index(value, index) => self.execute_index_operation(local_scope, value, index),
+        }
+    }
+
+    fn execute_assign(&mut self, local_scope: &mut Scope, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Value {
+        let evaluated_value = self.execute_expression(local_scope, rhs);
+
+        match lhs.as_ref() {
+            Expression::Term(Term::Variable(name)) => {
                 self.global_scope.insert(name.to_owned(), evaluated_value.clone());
-                evaluated_value
             },
 
-            Expression::Dot(_, _) => todo!(),
-            Expression::Index(_, _) => todo!(),
+            Expression::Dot(table, name) => {
+                let table = self.execute_expression(local_scope, table);
+                match table {
+                    Value::Table(table) => {
+                        table.borrow_mut().insert(Index::Name(name.to_owned()), evaluated_value.clone());
+                    },
+
+                    _ => todo!("Throw error"),
+                }
+            },
+
+            Expression::Index(table, index) => {
+                let table = self.execute_expression(local_scope, table);
+                match table {
+                    Value::Table(table) => {
+                        let index = self.evaluate_index(local_scope, index);
+                        table.borrow_mut().insert(index, evaluated_value.clone());
+                    },
+
+                    _ => todo!("Throw error"),
+                }
+            },
+
+            _ => todo!("Throw error"),
+        }
+
+        evaluated_value
+    }
+
+    fn execute_dot_operation(&mut self, local_scope: &mut Scope, value: &Box<Expression>, name: &str) -> Value {
+        let evaluated_value = self.execute_expression(local_scope, value);
+        let index = Index::Name(name.to_owned());
+
+        match evaluated_value {
+            Value::Table(table) => {
+                table.borrow().get(&index).unwrap_or(&Value::Nil).clone()
+            },
+
+            _ => todo!("Throw error"),
+        }
+    }
+
+    fn execute_index_operation(&mut self, local_scope: &mut Scope, value: &Box<Expression>, index: &Box<Expression>) -> Value {
+        let evaluated_value = self.execute_expression(local_scope, value);
+        let index = self.evaluate_index(local_scope, index);
+
+        match evaluated_value {
+            Value::Table(table) => {
+                table.borrow().get(&index).unwrap_or(&Value::Nil).clone()
+            },
+
+            _ => todo!("Throw error"),
+        }
+    }
+
+    fn evaluate_index(&mut self, local_scope: &mut Scope, index: &Box<Expression>) -> Index {
+        let evaluated_index = self.execute_expression(local_scope, index);
+        match evaluated_index {
+            Value::Number(n) => Index::Number(n),
+            _ => todo!("Throw error"),
         }
     }
 
@@ -93,11 +167,11 @@ impl Interpreter {
             Value::Number(lhs_n) => match rhs {
                 Value::Nil => Value::Nil,
                 Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
-                Value::Table => Value::Nil,
+                Value::Table(_) => Value::Nil,
                 Value::Function(_, _) => Value::Nil,
                 Value::NativeFunction(_) => Value::Nil,
             },
-            Value::Table => Value::Nil,
+            Value::Table(_) => Value::Nil,
             Value::Function(_, _) => Value::Nil,
             Value::NativeFunction(_) => Value::Nil,
         }
@@ -113,7 +187,7 @@ impl Interpreter {
     }
 
     fn execute_construct_table(&mut self) -> Value {
-        Value::Table
+        Value::Table(Rc::new(RefCell::new(HashMap::new())))
     }
 
     fn execute_call<'a>(&mut self,
