@@ -95,7 +95,11 @@ impl Interpreter {
 
         match lhs.as_ref() {
             Expression::Term(Term::Variable(name)) => {
-                self.global_scope.insert(name.to_owned(), evaluated_value);
+                if local_scope.contains_key(name) {
+                    local_scope.insert(name.to_owned(), evaluated_value);
+                } else {
+                    self.global_scope.insert(name.to_owned(), evaluated_value);
+                }
             },
 
             Expression::Dot(table, name) => {
