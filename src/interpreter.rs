@@ -78,6 +78,9 @@ impl Interpreter {
                 self.global_scope.insert(name.to_owned(), evaluated_value.clone());
                 evaluated_value
             },
+
+            Expression::Dot(_, _) => todo!(),
+            Expression::Index(_, _) => todo!(),
         }
     }
 

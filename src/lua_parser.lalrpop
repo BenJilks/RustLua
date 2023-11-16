@@ -35,10 +35,16 @@ ExpressionOperation: Operation = {
     "-" => Operation::Subtract,
 }
 
-Factor = Tier<FactorOperation, Term>;
+Factor = Tier<FactorOperation, Access>;
 FactorOperation: Operation = {
     "*" => Operation::Multiply,
     "/" => Operation::Divide,
+}
+
+Access: Box<Expression> = {
+    <Access> "." <Identifier> => Box::new(Expression::Dot(<>)),
+    <Access> "[" <Expression> "]" => Box::new(Expression::Index(<>)),
+    Term
 }
 
 Tier<Op, NextTier>: Box<Expression> = {

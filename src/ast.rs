@@ -29,6 +29,8 @@ pub enum Expression {
     Term(Term),
     Binary(Box<Expression>, Operation, Box<Expression>),
     Assignment(String, Box<Expression>),
+    Dot(Box<Expression>, String),
+    Index(Box<Expression>, Box<Expression>),
 }
 
 #[derive(Debug, Clone)]
