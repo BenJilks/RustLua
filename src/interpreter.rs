@@ -10,11 +10,18 @@ pub enum Index {
 }
 
 #[derive(Debug, Clone)]
+pub struct FunctionCapture {
+    parameters: Vec<String>,
+    body: Vec<Statement>,
+    capture: Scope,
+}
+
+#[derive(Debug, Clone)]
 pub enum Value {
     Nil,
     Number(i32),
     String(String),
-    Function(Vec<String>, Vec<Statement>),
+    Function(Rc<RefCell<FunctionCapture>>),
     NativeFunction(fn(Vec<Value>) -> Value),
     Table(Rc<RefCell<HashMap<Index, Value>>>),
 }
@@ -54,7 +61,7 @@ impl Interpreter {
             Statement::Expression(expression) => { self.execute_expression(local_scope, expression); None },
             Statement::Return(value) => Some(self.execute_expression(local_scope, value)),
             Statement::Local(name, value) => { self.execute_local(local_scope, name, value); None },
-            Statement::Function(function) => { self.execute_function(function); None },
+            Statement::Function(function) => { self.execute_function(&local_scope, function); None },
         }
     }
 
@@ -63,15 +70,19 @@ impl Interpreter {
         local_scope.insert(name.to_owned(), evaluated_value);
     }
 
-    fn execute_function(&mut self, function: &Function) {
-        let function_value = Value::Function(function.parameters.clone(), function.body.clone());
+    fn execute_function(&mut self, local_scope: &Scope, function: &Function) {
+        let function_value = Value::Function(Rc::new(RefCell::new(FunctionCapture {
+            parameters: function.parameters.clone(),
+            body: function.body.clone(),
+            capture: local_scope.clone(),
+        })));
+
         self.global_scope.insert(function.name.clone(), function_value);
     }
 
     fn execute_expression(&mut self, local_scope: &mut Scope, expression: &Box<Expression>) -> Value {
         match expression.as_ref() {
             Expression::Term(term) => self.execute_term(local_scope, term),
-
             Expression::Binary(lhs, operation, rhs) => {
                 let lhs = self.execute_expression(local_scope, lhs);
                 let rhs = self.execute_expression(local_scope, rhs);
@@ -83,10 +94,15 @@ impl Interpreter {
                 }
             },
 
+            Expression::Function(parameters, body) => Value::Function(Rc::new(RefCell::new(FunctionCapture {
+                parameters: parameters.clone(),
+                body: body.clone(),
+                capture: local_scope.clone(),
+            }))),
+
             Expression::Call(callee, arguments) => self.execute_call(local_scope, callee, arguments),
             Expression::Dot(value, name) => self.execute_dot_operation(local_scope, value, name),
             Expression::Index(value, index) => self.execute_index_operation(local_scope, value, index),
-            Expression::Function(parameters, body) => Value::Function(parameters.clone(), body.clone()),
         }
     }
 
@@ -175,12 +191,12 @@ impl Interpreter {
                 Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
                 Value::String(_) => Value::Nil,
                 Value::Table(_) => Value::Nil,
-                Value::Function(_, _) => Value::Nil,
+                Value::Function(_) => Value::Nil,
                 Value::NativeFunction(_) => Value::Nil,
             },
             Value::String(_) => Value::Nil,
             Value::Table(_) => Value::Nil,
-            Value::Function(_, _) => Value::Nil,
+            Value::Function(_) => Value::Nil,
             Value::NativeFunction(_) => Value::Nil,
         }
     }
@@ -207,8 +223,8 @@ impl Interpreter {
             Value::NativeFunction(func) =>
                 self.execute_native_call(local_scope, arguments, func),
 
-            Value::Function(parameters, body) =>
-                self.execute_function_call(local_scope, arguments, parameters, body),
+            Value::Function(function_capture) =>
+                self.execute_function_call(local_scope, arguments, function_capture),
 
             _ => todo!("Throw error"),
         }
@@ -227,19 +243,22 @@ impl Interpreter {
     fn execute_function_call<'a>(&mut self,
                                  local_scope: &mut Scope,
                                  arguments: &Vec<Box<Expression>>,
-                                 parameters: Vec<String>,
-                                 body: Vec<Statement>) -> Value {
+                                 function_capture: Rc<RefCell<FunctionCapture>>) -> Value {
+        let mut function_capture = function_capture.borrow_mut();
+        let parameters = function_capture.parameters.clone();
+        let body = function_capture.body.clone();
+
         if parameters.len() != arguments.len() {
             todo!("Throw error");
         }
 
-        let mut function_scope = Scope::default();
+        let function_scope = &mut function_capture.capture;
         for (argument, parameter) in arguments.iter().zip(parameters) {
             function_scope.insert(parameter.to_owned(), self.execute_expression(local_scope, argument));
         }
 
         for statement in body {
-            if let Some(return_value) = self.execute_statement(&mut function_scope, &statement) {
+            if let Some(return_value) = self.execute_statement(function_scope, &statement) {
                 return return_value;
             }
         }

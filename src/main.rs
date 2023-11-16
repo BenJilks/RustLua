@@ -14,13 +14,22 @@ fn main() {
     //     end
     // ";
 
-    let test_program = r"
-        x = function()
-            print(21)
+    let test_program = r#"
+        function x()
+            local test = 0
+
+            return function()
+                test = test + 1
+                return test
+            end
         end
 
-        print(x)
-    ";
+        test = x()
+        print(test())
+        print(test())
+        print(test())
+        print(test())
+    "#;
 
     let parser = lua_parser::ProgramParser::new();
     let program = parser.parse(test_program).unwrap();
@@ -34,7 +43,7 @@ fn main() {
                 Value::Number(n) => print!("{} ", n),
                 Value::String(s) => print!("{} ", s),
                 Value::Table(table) => print!("{:?} ", table.borrow()),
-                Value::Function(_, _) => print!("<function> "),
+                Value::Function(_) => print!("<function> "),
                 Value::NativeFunction(_) => print!("<native function> "),
             }
         }
