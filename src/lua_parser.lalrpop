@@ -44,7 +44,16 @@ FactorOperation: Operation = {
 Access: Box<Expression> = {
     <Access> "." <Identifier> => Box::new(Expression::Dot(<>)),
     <Access> "[" <Expression> "]" => Box::new(Expression::Index(<>)),
+    <Access> "(" <ArgumentList> ")" => Box::new(Expression::Call(<>)),
     Term
+}
+
+ArgumentList: Vec<Box<Expression>> = {
+    <arguments: (<Expression> ",")*> <last: Expression?> => {
+        let mut arguments = arguments;
+        arguments.extend(last);
+        arguments
+    }
 }
 
 Tier<Op, NextTier>: Box<Expression> = {
@@ -55,16 +64,7 @@ Tier<Op, NextTier>: Box<Expression> = {
 Term: Box<Expression> = {
     <n:Number> => Box::new(Expression::Term(Term::Number(n))),
     <v:Identifier> => Box::new(Expression::Term(Term::Variable(v))),
-    <v:Identifier> "(" <arguments: ArgumentList> ")" => Box::new(Expression::Term(Term::Call(<>))),
     "{" "}" => Box::new(Expression::Term(Term::Table))
-}
-
-ArgumentList: Vec<Box<Expression>> = {
-    <arguments: (<Expression> ",")*> <last: Expression?> => {
-        let mut arguments = arguments;
-        arguments.extend(last);
-        arguments
-    }
 }
 
 Number: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();

@@ -29,6 +29,7 @@ pub enum Expression {
     Term(Term),
     Binary(Box<Expression>, Operation, Box<Expression>),
     Assignment(Box<Expression>, Box<Expression>),
+    Call(Box<Expression>, Vec<Box<Expression>>),
     Dot(Box<Expression>, String),
     Index(Box<Expression>, Box<Expression>),
 }
@@ -37,6 +38,5 @@ pub enum Expression {
 pub enum Term {
     Number(i32),
     Variable(String),
-    Call(String, Vec<Box<Expression>>),
     Table,
 }

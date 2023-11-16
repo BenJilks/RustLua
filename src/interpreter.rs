@@ -82,6 +82,7 @@ impl Interpreter {
             },
 
             Expression::Assignment(lhs, rhs) => self.execute_assign(local_scope, lhs, rhs),
+            Expression::Call(callee, arguments) => self.execute_call(local_scope, callee, arguments),
             Expression::Dot(value, name) => self.execute_dot_operation(local_scope, value, name),
             Expression::Index(value, index) => self.execute_index_operation(local_scope, value, index),
         }
@@ -181,7 +182,6 @@ impl Interpreter {
         match term {
             Term::Number(n) => Value::Number(*n),
             Term::Variable(identifier) => self.get(&local_scope, identifier).unwrap_or(&Value::Nil).clone(),
-            Term::Call(callee, arguments) => self.execute_call(local_scope, callee, arguments),
             Term::Table => self.execute_construct_table(),
         }
     }
@@ -192,14 +192,9 @@ impl Interpreter {
 
     fn execute_call<'a>(&mut self,
                         local_scope: &mut Scope,
-                        callee: &String,
+                        callee: &Box<Expression>,
                         arguments: &Vec<Box<Expression>>) -> Value {
-        let evaluated_callee_or_none = self.get(&local_scope, callee);
-        if evaluated_callee_or_none.is_none() {
-            todo!("Throw error");
-        }
-
-        let evaluated_callee = evaluated_callee_or_none.unwrap().clone();
+        let evaluated_callee = self.execute_expression(local_scope, callee);
         match evaluated_callee {
             Value::NativeFunction(func) =>
                 self.execute_native_call(local_scope, arguments, func),
