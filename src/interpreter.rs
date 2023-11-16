@@ -49,6 +49,7 @@ impl Interpreter {
 
     fn execute_statement(&mut self, local_scope: &mut Scope, statement: &Statement) -> Option<Value> {
         match statement {
+            Statement::Assignment(lhs, rhs) => { self.execute_assign(local_scope, lhs, rhs); None },
             Statement::Expression(expression) => { self.execute_expression(local_scope, expression); None },
             Statement::Return(value) => Some(self.execute_expression(local_scope, value)),
             Statement::Local(name, value) => { self.execute_local(local_scope, name, value); None },
@@ -81,26 +82,26 @@ impl Interpreter {
                 }
             },
 
-            Expression::Assignment(lhs, rhs) => self.execute_assign(local_scope, lhs, rhs),
             Expression::Call(callee, arguments) => self.execute_call(local_scope, callee, arguments),
             Expression::Dot(value, name) => self.execute_dot_operation(local_scope, value, name),
             Expression::Index(value, index) => self.execute_index_operation(local_scope, value, index),
+            Expression::Function(parameters, body) => Value::Function(parameters.clone(), body.clone()),
         }
     }
 
-    fn execute_assign(&mut self, local_scope: &mut Scope, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Value {
+    fn execute_assign(&mut self, local_scope: &mut Scope, lhs: &Box<Expression>, rhs: &Box<Expression>) {
         let evaluated_value = self.execute_expression(local_scope, rhs);
 
         match lhs.as_ref() {
             Expression::Term(Term::Variable(name)) => {
-                self.global_scope.insert(name.to_owned(), evaluated_value.clone());
+                self.global_scope.insert(name.to_owned(), evaluated_value);
             },
 
             Expression::Dot(table, name) => {
                 let table = self.execute_expression(local_scope, table);
                 match table {
                     Value::Table(table) => {
-                        table.borrow_mut().insert(Index::Name(name.to_owned()), evaluated_value.clone());
+                        table.borrow_mut().insert(Index::Name(name.to_owned()), evaluated_value);
                     },
 
                     _ => todo!("Throw error"),
@@ -112,7 +113,7 @@ impl Interpreter {
                 match table {
                     Value::Table(table) => {
                         let index = self.evaluate_index(local_scope, index);
-                        table.borrow_mut().insert(index, evaluated_value.clone());
+                        table.borrow_mut().insert(index, evaluated_value);
                     },
 
                     _ => todo!("Throw error"),
@@ -121,8 +122,6 @@ impl Interpreter {
 
             _ => todo!("Throw error"),
         }
-
-        evaluated_value
     }
 
     fn execute_dot_operation(&mut self, local_scope: &mut Scope, value: &Box<Expression>, name: &str) -> Value {

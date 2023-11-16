@@ -10,6 +10,7 @@ pub struct Function {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
+    Assignment(Box<Expression>, Box<Expression>),
     Return(Box<Expression>),
     Local(String, Box<Expression>),
     Expression(Box<Expression>),
@@ -28,10 +29,10 @@ pub enum Operation {
 pub enum Expression {
     Term(Term),
     Binary(Box<Expression>, Operation, Box<Expression>),
-    Assignment(Box<Expression>, Box<Expression>),
     Call(Box<Expression>, Vec<Box<Expression>>),
     Dot(Box<Expression>, String),
     Index(Box<Expression>, Box<Expression>),
+    Function(Vec<String>, Vec<Statement>),
 }
 
 #[derive(Debug, Clone)]

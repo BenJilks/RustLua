@@ -9,11 +9,19 @@ pub Program: Program = {
 
 Statement: Statement = {
     "return" <e:Expression> => Statement::Return(e),
-    "local" <name:Identifier> "=" <value:Expression> => Statement::Local(<>),
+    "local" <Identifier> "=" <Expression> => Statement::Local(<>),
     "function" <name:Identifier> "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
         Statement::Function(Function { name, parameters, body }),
 
+    <Expression> "=" <Expression> => Statement::Assignment(<>),
     <e:Expression> => Statement::Expression(e),
+}
+
+Expression: Box<Expression> = {
+    "function" "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
+        Box::new(Expression::Function(parameters, body)),
+
+    <a:ArithmaticExpression> => a,
 }
 
 ParameterList: Vec<String> = {
@@ -22,11 +30,6 @@ ParameterList: Vec<String> = {
         parameters.extend(last);
         parameters
     },
-}
-
-Expression: Box<Expression> = {
-    <i:Expression> "=" <v:ArithmaticExpression> => Box::new(Expression::Assignment(<>)),
-    <a:ArithmaticExpression> => a,
 }
 
 ArithmaticExpression = Tier<ExpressionOperation, Factor>;

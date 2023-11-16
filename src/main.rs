@@ -15,10 +15,11 @@ fn main() {
     // ";
 
     let test_program = r"
-        x = {}
-        x.y = 2
-        x[1] = 21
-        print(x.y, x[1])
+        x = function()
+            print(21)
+        end
+
+        print(x)
     ";
 
     let parser = lua_parser::ProgramParser::new();
