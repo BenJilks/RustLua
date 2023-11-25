@@ -14,6 +14,9 @@ Statement: Statement = {
     "if" <Expression> "then" <(<Statement>)*> <("elseif" <Expression> "then" <(<Statement>)*>)*> <("else" <(<Statement>)*>)?> "end" =>
         Statement::If(<>),
 
+    "for" <Identifier> "=" <Expression> "," <Expression> <("," <Expression>)?> "do" <(<Statement>)*> "end" =>
+        Statement::NumericFor(<>),
+
     "function" <name:Identifier> "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
         Statement::Function(Function { name, parameters, body }),
 

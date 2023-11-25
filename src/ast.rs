@@ -16,6 +16,7 @@ pub enum Statement {
     Expression(Box<Expression>),
     Function(Function),
     If(Box<Expression>, Vec<Statement>, Vec<(Box<Expression>, Vec<Statement>)>, Option<Vec<Statement>>),
+    NumericFor(String, Box<Expression>, Box<Expression>, Option<Box<Expression>>, Vec<Statement>),
 }
 
 #[derive(Debug, PartialEq, Clone)]

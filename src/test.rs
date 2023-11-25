@@ -125,6 +125,24 @@ fn test_if() {
 }
 
 #[test]
+fn test_numeric_for() {
+    let x = run_test_script(r"
+        x = 0
+        for i = 0, 10, 5 do
+            x = x + i
+        end
+
+        return x
+    ");
+
+    assert_eq!(x, Ok(Value::Number(15.0)));
+
+    assert_eq!(run_test_script("for i = nil, 0 do end"), Err(LuaError::BadForInitialValue(Value::Nil)));
+    assert_eq!(run_test_script("for i = 0, nil do end"), Err(LuaError::BadForLimit(Value::Nil)));
+    assert_eq!(run_test_script("for i = 0, 1, nil do end"), Err(LuaError::BadForStep(Value::Nil)));
+}
+
+#[test]
 fn test_index_error() {
     assert_eq!(run_test_script("true.x"), Err(LuaError::InvalidIndex(Value::Boolean(true))));
 }

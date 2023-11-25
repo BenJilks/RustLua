@@ -53,8 +53,57 @@ impl Interpreter {
             Statement::Return(value) => Some(self.execute_expression(scope, value)?),
             Statement::Local(name, value) => { self.execute_local(scope, name, value)?; None },
             Statement::Function(function) => { self.execute_function(scope, function); None },
-            Statement::If(condition, then, elseif, else_) => self.execute_if(scope, condition, then, elseif, else_)?,
+
+            Statement::If(condition, then, elseif, else_) =>
+                self.execute_if(scope, condition, then, elseif, else_)?,
+
+            Statement::NumericFor(name, start, end, step, body) =>
+                self.execute_numeric_for(scope, name, start, end, step, body)?,
         })
+    }
+
+    fn execute_numeric_for(&mut self,
+                           scope: &mut Scope,
+                           name: &String,
+                           start: &Box<Expression>,
+                           end: &Box<Expression>,
+                           step: &Option<Box<Expression>>,
+                           body: &Vec<Statement>) -> Result<Option<Value>> {
+        let evaluated_start = self.execute_expression(scope, start)?;
+        let mut value = match evaluated_start {
+            Value::Number(initial_value) => initial_value,
+            value => return Err(LuaError::BadForInitialValue(value)),
+        };
+
+        let evaluated_end = self.execute_expression(scope, end)?;
+        let limit = match evaluated_end {
+            Value::Number(limit) => limit,
+            value => return Err(LuaError::BadForLimit(value)),
+        };
+
+        let evaluated_step = step.as_ref()
+            .map(|step| self.execute_expression(scope, step));
+        let step = match evaluated_step {
+            Some(Ok(Value::Number(step))) => step,
+            Some(Ok(value)) => return Err(LuaError::BadForStep(value)),
+            Some(Err(err)) => return Err(err),
+            None => 1.0,
+        };
+
+        loop {
+            if value > limit {
+                break;
+            }
+
+            scope.put(name.to_owned(), Value::Number(value));
+            if let Some(value) = self.execute_body(scope, body)? {
+                return Ok(Some(value));
+            }
+
+            value += step;
+        }
+
+        Ok(None)
     }
 
     fn execute_if(&mut self,

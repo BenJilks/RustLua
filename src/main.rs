@@ -11,12 +11,8 @@ mod test;
 
 fn main() -> interpreter::Result<()> {
     let test_program = r#"
-        if 1 == 2 then
-            print(21)
-        elseif 1 == 1 then
-            print(22)
-        else
-            print(23)
+        for i = 0, 10, 2 do
+            print(i)
         end
     "#;
 
