@@ -9,6 +9,8 @@ pub enum Index {
     Number(i32),
 }
 
+type Table = HashMap<Index, Value>;
+
 #[derive(Debug, Clone)]
 pub struct FunctionCapture {
     parameters: Vec<String>,
@@ -21,12 +23,32 @@ pub enum Value {
     Nil,
     Number(i32),
     String(String),
-    Function(Rc<RefCell<FunctionCapture>>),
+    Function(Rc<FunctionCapture>),
+    Table(Rc<RefCell<Table>>),
     NativeFunction(fn(Vec<Value>) -> Value),
-    Table(Rc<RefCell<HashMap<Index, Value>>>),
 }
 
-type Scope = HashMap<String, Value>;
+#[derive(Default, Debug, Clone)]
+struct Scope {
+    table: HashMap<String, Rc<RefCell<Value>>>,
+}
+
+impl Scope {
+    pub fn put(&mut self, name: String, value: Value) {
+        match self.table.get(&name) {
+            Some(slot) => slot.swap(&RefCell::from(value)),
+            None => { self.table.insert(name, Rc::from(RefCell::from(value))); },
+        }
+    }
+
+    pub fn has(&self, name: &str) -> bool {
+        self.table.contains_key(name)
+    }
+
+    pub fn get(&self, name: &str) -> Option<Value> {
+        self.table.get(name).map(|x| x.borrow().clone())
+    }
+}
 
 pub struct Interpreter {
     global_scope: Scope,
@@ -38,88 +60,81 @@ impl Interpreter {
     }
 
     pub fn execute(&mut self, program: Program) {
-        let mut local_scope = Scope::default();
+        let mut scope = Scope::default();
         for statement in program {
-            self.execute_statement(&mut local_scope, &statement);
+            self.execute_statement(&mut scope, &statement);
         }
     }
 
     pub fn define(&mut self, name: &str, func: fn(Vec<Value>) -> Value) {
-        self.global_scope.insert(name.to_owned(), Value::NativeFunction(func));
+        self.global_scope.put(name.to_owned(), Value::NativeFunction(func));
     }
 
-    fn get<'a>(&'a mut self, local_scope: &'a Scope, name: &str) -> Option<&'a Value> {
-        match local_scope.get(name) {
-            Some(value) => Some(value),
-            None => self.global_scope.get(name),
-        }
-    }
-
-    fn execute_statement(&mut self, local_scope: &mut Scope, statement: &Statement) -> Option<Value> {
+    fn execute_statement(&mut self, scope: &mut Scope, statement: &Statement) -> Option<Value> {
         match statement {
-            Statement::Assignment(lhs, rhs) => { self.execute_assign(local_scope, lhs, rhs); None },
-            Statement::Expression(expression) => { self.execute_expression(local_scope, expression); None },
-            Statement::Return(value) => Some(self.execute_expression(local_scope, value)),
-            Statement::Local(name, value) => { self.execute_local(local_scope, name, value); None },
-            Statement::Function(function) => { self.execute_function(&local_scope, function); None },
+            Statement::Assignment(lhs, rhs) => { self.execute_assign(scope, lhs, rhs); None },
+            Statement::Expression(expression) => { self.execute_expression(scope, expression); None },
+            Statement::Return(value) => Some(self.execute_expression(scope, value)),
+            Statement::Local(name, value) => { self.execute_local(scope, name, value); None },
+            Statement::Function(function) => { self.execute_function(scope, function); None },
         }
     }
 
-    fn execute_local(&mut self, local_scope: &mut Scope, name: &str, value: &Box<Expression>) {
-        let evaluated_value = self.execute_expression(local_scope, value);
-        local_scope.insert(name.to_owned(), evaluated_value);
+    fn execute_local(&mut self, scope: &mut Scope, name: &str, value: &Box<Expression>) {
+        let evaluated_value = self.execute_expression(scope, value);
+        scope.put(name.to_owned(), evaluated_value);
     }
 
-    fn execute_function(&mut self, local_scope: &Scope, function: &Function) {
-        let function_value = Value::Function(Rc::new(RefCell::new(FunctionCapture {
+    fn execute_function(&mut self, scope: &mut Scope, function: &Function) {
+        let function_value = Value::Function(Rc::from(FunctionCapture {
             parameters: function.parameters.clone(),
             body: function.body.clone(),
-            capture: local_scope.clone(),
-        })));
+            capture: scope.clone(),
+        }));
 
-        self.global_scope.insert(function.name.clone(), function_value);
+        self.global_scope.put(function.name.clone(), function_value);
     }
 
-    fn execute_expression(&mut self, local_scope: &mut Scope, expression: &Box<Expression>) -> Value {
+    fn execute_expression(&mut self, scope: &mut Scope, expression: &Box<Expression>) -> Value {
         match expression.as_ref() {
-            Expression::Term(term) => self.execute_term(local_scope, term),
+            Expression::Term(term) => self.execute_term(scope, term),
             Expression::Binary(lhs, operation, rhs) => {
-                let lhs = self.execute_expression(local_scope, lhs);
-                let rhs = self.execute_expression(local_scope, rhs);
+                let lhs = self.execute_expression(scope, lhs);
+                let rhs = self.execute_expression(scope, rhs);
                 match operation {
-                    Operation::Add => self.execute_arithmatic_operation(lhs, rhs, |a, b| a + b),
-                    Operation::Subtract => self.execute_arithmatic_operation(lhs, rhs, |a, b| a - b),
-                    Operation::Multiply => self.execute_arithmatic_operation(lhs, rhs, |a, b| a * b),
-                    Operation::Divide => self.execute_arithmatic_operation(lhs, rhs, |a, b| a / b),
+                    Operation::Add => execute_arithmetic_operation(lhs, rhs, |a, b| a + b),
+                    Operation::Subtract => execute_arithmetic_operation(lhs, rhs, |a, b| a - b),
+                    Operation::Multiply => execute_arithmetic_operation(lhs, rhs, |a, b| a * b),
+                    Operation::Divide => execute_arithmetic_operation(lhs, rhs, |a, b| a / b),
                 }
             },
 
-            Expression::Function(parameters, body) => Value::Function(Rc::new(RefCell::new(FunctionCapture {
+            Expression::Function(parameters, body) => Value::Function(Rc::from(FunctionCapture {
                 parameters: parameters.clone(),
                 body: body.clone(),
-                capture: local_scope.clone(),
-            }))),
+                capture: scope.clone(),
+            })),
 
-            Expression::Call(callee, arguments) => self.execute_call(local_scope, callee, arguments),
-            Expression::Dot(value, name) => self.execute_dot_operation(local_scope, value, name),
-            Expression::Index(value, index) => self.execute_index_operation(local_scope, value, index),
+            Expression::Call(callee, arguments) => self.execute_call(scope, callee, arguments),
+            Expression::Dot(value, name) => self.execute_dot_operation(scope, value, name),
+            Expression::Index(value, index) => self.execute_index_operation(scope, value, index),
         }
     }
 
-    fn execute_assign(&mut self, local_scope: &mut Scope, lhs: &Box<Expression>, rhs: &Box<Expression>) {
-        let evaluated_value = self.execute_expression(local_scope, rhs);
+    fn execute_assign(&mut self, scope: &mut Scope, lhs: &Box<Expression>, rhs: &Box<Expression>) {
+        let evaluated_value = self.execute_expression(scope, rhs);
 
         match lhs.as_ref() {
             Expression::Term(Term::Variable(name)) => {
-                if local_scope.contains_key(name) {
-                    local_scope.insert(name.to_owned(), evaluated_value);
+                if scope.has(name) {
+                    scope.put(name.to_owned(), evaluated_value);
                 } else {
-                    self.global_scope.insert(name.to_owned(), evaluated_value);
+                    self.global_scope.put(name.to_owned(), evaluated_value);
                 }
             },
 
             Expression::Dot(table, name) => {
-                let table = self.execute_expression(local_scope, table);
+                let table = self.execute_expression(scope, table);
                 match table {
                     Value::Table(table) => {
                         table.borrow_mut().insert(Index::Name(name.to_owned()), evaluated_value);
@@ -130,10 +145,10 @@ impl Interpreter {
             },
 
             Expression::Index(table, index) => {
-                let table = self.execute_expression(local_scope, table);
+                let table = self.execute_expression(scope, table);
                 match table {
                     Value::Table(table) => {
-                        let index = self.evaluate_index(local_scope, index);
+                        let index = self.evaluate_index(scope, index);
                         table.borrow_mut().insert(index, evaluated_value);
                     },
 
@@ -145,8 +160,8 @@ impl Interpreter {
         }
     }
 
-    fn execute_dot_operation(&mut self, local_scope: &mut Scope, value: &Box<Expression>, name: &str) -> Value {
-        let evaluated_value = self.execute_expression(local_scope, value);
+    fn execute_dot_operation(&mut self, scope: &mut Scope, value: &Box<Expression>, name: &str) -> Value {
+        let evaluated_value = self.execute_expression(scope, value);
         let index = Index::Name(name.to_owned());
 
         match evaluated_value {
@@ -158,9 +173,9 @@ impl Interpreter {
         }
     }
 
-    fn execute_index_operation(&mut self, local_scope: &mut Scope, value: &Box<Expression>, index: &Box<Expression>) -> Value {
-        let evaluated_value = self.execute_expression(local_scope, value);
-        let index = self.evaluate_index(local_scope, index);
+    fn execute_index_operation(&mut self, scope: &mut Scope, value: &Box<Expression>, index: &Box<Expression>) -> Value {
+        let evaluated_value = self.execute_expression(scope, value);
+        let index = self.evaluate_index(scope, index);
 
         match evaluated_value {
             Value::Table(table) => {
@@ -171,8 +186,8 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_index(&mut self, local_scope: &mut Scope, index: &Box<Expression>) -> Index {
-        let evaluated_index = self.execute_expression(local_scope, index);
+    fn evaluate_index(&mut self, scope: &mut Scope, index: &Box<Expression>) -> Index {
+        let evaluated_index = self.execute_expression(scope, index);
         match evaluated_index {
             Value::Number(n) => Index::Number(n),
             Value::String(s) => Index::Name(s),
@@ -180,89 +195,90 @@ impl Interpreter {
         }
     }
 
-    fn execute_arithmatic_operation(&mut self,
-                                    lhs: Value,
-                                    rhs: Value,
-                                    number_operation: fn(i32, i32) -> i32) -> Value {
-        match lhs {
-            Value::Nil => Value::Nil,
-            Value::Number(lhs_n) => match rhs {
-                Value::Nil => Value::Nil,
-                Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
-                Value::String(_) => Value::Nil,
-                Value::Table(_) => Value::Nil,
-                Value::Function(_) => Value::Nil,
-                Value::NativeFunction(_) => Value::Nil,
-            },
-            Value::String(_) => Value::Nil,
-            Value::Table(_) => Value::Nil,
-            Value::Function(_) => Value::Nil,
-            Value::NativeFunction(_) => Value::Nil,
-        }
-    }
-
-    fn execute_term(&mut self, local_scope: &mut Scope, term: &Term) -> Value {
+    fn execute_term(&mut self, scope: &mut Scope, term: &Term) -> Value {
         match term {
             Term::Number(n) => Value::Number(*n),
             Term::String(s) => Value::String(s.to_owned()),
-            Term::Variable(identifier) => self.get(&local_scope, identifier).unwrap_or(&Value::Nil).clone(),
+            Term::Variable(identifier) => {
+                scope.get(identifier)
+                    .unwrap_or(self.global_scope.get(identifier)
+                    .unwrap_or(Value::Nil))
+            },
             Term::Table => self.execute_construct_table(),
         }
     }
 
-    fn execute_construct_table(&mut self) -> Value {
+    fn execute_construct_table(&self) -> Value {
         Value::Table(Rc::new(RefCell::new(HashMap::new())))
     }
 
     fn execute_call<'a>(&mut self,
-                        local_scope: &mut Scope,
+                        scope: &mut Scope,
                         callee: &Box<Expression>,
                         arguments: &Vec<Box<Expression>>) -> Value {
-        let evaluated_callee = self.execute_expression(local_scope, callee);
+        let evaluated_callee = self.execute_expression(scope, callee);
         match evaluated_callee {
             Value::NativeFunction(func) =>
-                self.execute_native_call(local_scope, arguments, func),
+                self.execute_native_call(scope, arguments, func),
 
             Value::Function(function_capture) =>
-                self.execute_function_call(local_scope, arguments, function_capture),
+                self.execute_function_call(scope, arguments, &function_capture),
 
             _ => todo!("Throw error"),
         }
     }
 
     fn execute_native_call<'a>(&mut self,
-                               local_scope: &mut Scope,
+                               scope: &mut Scope,
                                arguments: &Vec<Box<Expression>>,
                                func: fn(Vec<Value>) -> Value) -> Value {
         func(arguments
             .iter()
-            .map(|argument| self.execute_expression(local_scope, argument))
+            .map(|argument| self.execute_expression(scope, argument))
             .collect())
     }
 
     fn execute_function_call<'a>(&mut self,
-                                 local_scope: &mut Scope,
+                                 scope: &mut Scope,
                                  arguments: &Vec<Box<Expression>>,
-                                 function_capture: Rc<RefCell<FunctionCapture>>) -> Value {
-        let mut function_capture = function_capture.borrow_mut();
-        let parameters = function_capture.parameters.clone();
-        let body = function_capture.body.clone();
-
+                                 function_capture: &FunctionCapture) -> Value {
+        let parameters = &function_capture.parameters;
+        let body = &function_capture.body;
         if parameters.len() != arguments.len() {
             todo!("Throw error");
         }
 
-        let function_scope = &mut function_capture.capture;
+        let mut function_scope = function_capture.capture.clone();
         for (argument, parameter) in arguments.iter().zip(parameters) {
-            function_scope.insert(parameter.to_owned(), self.execute_expression(local_scope, argument));
+            function_scope.put(parameter.to_owned(), self.execute_expression(scope, argument));
         }
 
         for statement in body {
-            if let Some(return_value) = self.execute_statement(function_scope, &statement) {
+            if let Some(return_value) = self.execute_statement(&mut function_scope, &statement) {
                 return return_value;
             }
         }
 
         Value::Nil
+    }
+}
+
+fn execute_arithmetic_operation(lhs: Value,
+                                rhs: Value,
+                                number_operation: fn(i32, i32) -> i32) -> Value {
+    match lhs {
+        Value::Nil => Value::Nil,
+        Value::Number(lhs_n) => match rhs {
+            Value::Nil => Value::Nil,
+            Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
+            Value::String(_) => Value::Nil,
+            Value::Table(_) => Value::Nil,
+            Value::Function(_) => Value::Nil,
+            Value::NativeFunction(_) => Value::Nil,
+        },
+        Value::String(_) => Value::Nil,
+        Value::Table(_) => Value::Nil,
+        Value::Function(_) => Value::Nil,
+        Value::NativeFunction(_) => Value::Nil,
     }
 }

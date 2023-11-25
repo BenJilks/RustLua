@@ -33,7 +33,6 @@ fn main() {
 
     let parser = lua_parser::ProgramParser::new();
     let program = parser.parse(test_program).unwrap();
-    println!("{:?}", program);
 
     let mut interpreter = Interpreter::new();
     interpreter.define("print", |arguments| {
