@@ -31,7 +31,7 @@ pub enum Value {
 }
 
 impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Nil => write!(f, "<nil>"),
             Value::Number(n) => write!(f, "{}", n),
@@ -40,6 +40,19 @@ impl fmt::Display for Value {
             Value::Table(table) => write!(f, "{:?}", table.borrow()),
             Value::Function(_) => write!(f, "<function>"),
             Value::NativeFunction(_) => write!(f, "<native function>"),
+        }
+    }
+}
+
+impl Value {
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Self::Nil => "nil",
+            Self::Number(_) => "number",
+            Self::String(_) => "string",
+            Self::Boolean(_) => "boolean",
+            Self::Function(_) | Self::NativeFunction(_) => "function",
+            Self::Table(_) => "table",
         }
     }
 }

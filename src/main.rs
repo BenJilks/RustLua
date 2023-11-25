@@ -6,12 +6,9 @@ lalrpop_mod!(pub lua_parser);
 mod ast;
 mod interpreter;
 
-fn main() {
+fn main() -> interpreter::Result<()> {
     let test_program = r#"
-        print(1)
-        print(1.5)
-        print(.5)
-        print(5.)
+        print(x.y)
     "#;
 
     let parser = lua_parser::ProgramParser::new();
@@ -29,5 +26,5 @@ fn main() {
         Value::Nil
     });
 
-    interpreter.execute(program);
+    interpreter.execute(program)
 }
