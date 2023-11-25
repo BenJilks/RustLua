@@ -7,13 +7,6 @@ mod ast;
 mod interpreter;
 
 fn main() {
-    // let test_program = r"
-    //     function test(a, b)
-    //         local x = 21
-    //         return a + b * x
-    //     end
-    // ";
-
     let test_program = r#"
         function x()
             local test = 0
@@ -36,18 +29,13 @@ fn main() {
 
     let mut interpreter = Interpreter::new();
     interpreter.define("print", |arguments| {
-        for argument in arguments {
-            match argument {
-                Value::Nil => print!("<nil> "),
-                Value::Number(n) => print!("{} ", n),
-                Value::String(s) => print!("{} ", s),
-                Value::Table(table) => print!("{:?} ", table.borrow()),
-                Value::Function(_) => print!("<function> "),
-                Value::NativeFunction(_) => print!("<native function> "),
+        for (i, argument) in arguments.iter().enumerate() {
+            if i == arguments.len() - 1 {
+                println!("{}", argument);
+            } else {
+                print!("{} ", argument);
             }
         }
-
-        println!();
         Value::Nil
     });
 

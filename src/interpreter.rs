@@ -1,4 +1,5 @@
 use crate::ast::{Program, Statement, Expression, Term, Operation, Function};
+use core::fmt;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -26,6 +27,19 @@ pub enum Value {
     Function(Rc<FunctionCapture>),
     Table(Rc<RefCell<Table>>),
     NativeFunction(fn(Vec<Value>) -> Value),
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Value::Nil => write!(f, "<nil>"),
+            Value::Number(n) => write!(f, "{}", n),
+            Value::String(s) => write!(f, "{}", s),
+            Value::Table(table) => write!(f, "{:?}", table.borrow()),
+            Value::Function(_) => write!(f, "<function>"),
+            Value::NativeFunction(_) => write!(f, "<native function>"),
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone)]
