@@ -166,6 +166,8 @@ impl Interpreter {
             },
 
             Value::String(s) => Ok(Index::Name(s)),
+
+            // FIXME: We should be able to use anything as an index.
             _ => todo!("Throw error"),
         }
     }
@@ -200,7 +202,7 @@ impl Interpreter {
             Value::Function(function_capture) =>
                 self.execute_function_call(scope, arguments, &function_capture),
 
-            _ => todo!("Throw error"),
+            _ => Err(LuaError::InvalidCall(evaluated_callee)),
         }
     }
 
@@ -221,6 +223,7 @@ impl Interpreter {
         let parameters = &function_capture.parameters;
         let body = &function_capture.body;
         if parameters.len() != arguments.len() {
+            // FIXME: This should be allowed
             todo!("Throw error");
         }
 
