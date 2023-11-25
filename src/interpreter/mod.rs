@@ -56,26 +56,26 @@ impl Interpreter {
             Statement::If(condition, then, elseif, else_) =>
                 self.execute_if(scope, condition, then, elseif, else_)?,
 
-            Statement::NumericFor(name, start, end, step, body) =>
-                self.execute_numeric_for(scope, name, start, end, step, body)?,
+            Statement::NumericFor(name, initial_value, limit, step, body) =>
+                self.execute_numeric_for(scope, name, initial_value, limit, step, body)?,
         })
     }
 
     fn execute_numeric_for(&mut self,
                            scope: &mut Scope,
                            name: &String,
-                           start: &Box<Expression>,
-                           end: &Box<Expression>,
+                           initial_value: &Box<Expression>,
+                           limit: &Box<Expression>,
                            step: &Option<Box<Expression>>,
                            body: &Vec<Statement>) -> Result<Option<Value>> {
-        let evaluated_start = self.execute_expression(scope, start)?;
-        let mut value = match evaluated_start {
+        let evaluated_initial_value = self.execute_expression(scope, initial_value)?;
+        let mut value = match evaluated_initial_value {
             Value::Number(initial_value) => initial_value,
             value => return Err(LuaError::BadForInitialValue(value)),
         };
 
-        let evaluated_end = self.execute_expression(scope, end)?;
-        let limit = match evaluated_end {
+        let evaluated_limit = self.execute_expression(scope, limit)?;
+        let limit = match evaluated_limit {
             Value::Number(limit) => limit,
             value => return Err(LuaError::BadForLimit(value)),
         };
