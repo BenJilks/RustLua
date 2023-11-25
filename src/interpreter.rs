@@ -122,6 +122,8 @@ impl Interpreter {
                     Operation::Subtract => execute_arithmetic_operation(lhs, rhs, |a, b| a - b),
                     Operation::Multiply => execute_arithmetic_operation(lhs, rhs, |a, b| a * b),
                     Operation::Divide => execute_arithmetic_operation(lhs, rhs, |a, b| a / b),
+
+                    Operation::Equals => execute_logic_operation(lhs, rhs, |a, b| a == b),
                 }
             },
 
@@ -288,6 +290,28 @@ fn execute_arithmetic_operation(lhs: Value,
         Value::Number(lhs_n) => match rhs {
             Value::Nil => Value::Nil,
             Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
+            Value::String(_) => Value::Nil,
+            Value::Boolean(_) => Value::Nil,
+            Value::Table(_) => Value::Nil,
+            Value::Function(_) => Value::Nil,
+            Value::NativeFunction(_) => Value::Nil,
+        },
+        Value::String(_) => Value::Nil,
+        Value::Boolean(_) => Value::Nil,
+        Value::Table(_) => Value::Nil,
+        Value::Function(_) => Value::Nil,
+        Value::NativeFunction(_) => Value::Nil,
+    }
+}
+
+fn execute_logic_operation(lhs: Value,
+                           rhs: Value,
+                           number_operation: fn(i32, i32) -> bool) -> Value {
+    match lhs {
+        Value::Nil => Value::Nil,
+        Value::Number(lhs_n) => match rhs {
+            Value::Nil => Value::Nil,
+            Value::Number(rhs_n) => Value::Boolean(number_operation(lhs_n, rhs_n)),
             Value::String(_) => Value::Nil,
             Value::Boolean(_) => Value::Nil,
             Value::Table(_) => Value::Nil,

@@ -21,7 +21,7 @@ Expression: Box<Expression> = {
     "function" "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
         Box::new(Expression::Function(parameters, body)),
 
-    <a:ArithmaticExpression> => a,
+    <a:LogicExpression> => a,
 }
 
 ParameterList: Vec<String> = {
@@ -30,6 +30,11 @@ ParameterList: Vec<String> = {
         parameters.extend(last);
         parameters
     },
+}
+
+LogicExpression = Tier<LogicOperation, ArithmaticExpression>;
+LogicOperation: Operation = {
+    "==" => Operation::Equals,
 }
 
 ArithmaticExpression = Tier<ExpressionOperation, Factor>;

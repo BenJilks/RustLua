@@ -23,6 +23,8 @@ pub enum Operation {
     Subtract,
     Multiply,
     Divide,
+
+    Equals,
 }
 
 #[derive(Debug, Clone)]
