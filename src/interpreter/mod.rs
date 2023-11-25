@@ -59,10 +59,9 @@ impl Interpreter {
 
     fn execute_if(&mut self, scope: &mut Scope, condition: &Box<Expression>, then: &Vec<Statement>) -> Result<Option<Value>> {
         let evaluated_condition = self.execute_expression(scope, condition)?;
-        if evaluated_condition == Value::Boolean(true) {
-            self.execute_body(scope, then)
-        } else {
-            Ok(None)
+        match evaluated_condition {
+            Value::Boolean(false) | Value::Nil => Ok(None),
+            _ => self.execute_body(scope, then),
         }
     }
 

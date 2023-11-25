@@ -104,19 +104,12 @@ fn test_captures() {
 
 #[test]
 fn test_if() {
-    let x = run_test_script(r#"
-        if true then
-            return 1
-        end
-    "#);
-    assert_eq!(x, Ok(Value::Number(1.0)));
-
-    let x = run_test_script(r#"
-        if false then
-            return 1
-        end
-    "#);
-    assert_eq!(x, Ok(Value::Nil));
+    assert_eq!(run_test_script("if true then return 1 end"), Ok(Value::Number(1.0)));
+    assert_eq!(run_test_script("if false then return 1 end"), Ok(Value::Nil));
+    assert_eq!(run_test_script("if nil then return 1 end"), Ok(Value::Nil));
+    assert_eq!(run_test_script("if 1 then return 1 end"), Ok(Value::Number(1.0)));
+    assert_eq!(run_test_script("if {} then return 1 end"), Ok(Value::Number(1.0)));
+    assert_eq!(run_test_script("if \"test\" then return 1 end"), Ok(Value::Number(1.0)));
 }
 
 #[test]
