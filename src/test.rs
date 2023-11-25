@@ -31,6 +31,78 @@ fn test_literals() {
 }
 
 #[test]
+fn test_function_call() {
+    let x = run_test_script(r#"
+        function x(a, b)
+            return a + b
+        end
+
+        return x(1, 2)
+    "#);
+
+    assert_eq!(x, Ok(Value::Number(3.0)));
+}
+
+#[test]
+fn test_locals() {
+    let x = run_test_script(r#"
+        function x()
+            local l = 21
+            return l
+        end
+
+        x()
+        return l
+    "#);
+    assert_eq!(x, Ok(Value::Nil));
+
+    let x = run_test_script(r#"
+        function x()
+            local l = 21
+            return l
+        end
+
+        return x()
+    "#);
+    assert_eq!(x, Ok(Value::Number(21.0)));
+}
+
+#[test]
+fn test_captures() {
+    let x = run_test_script(r#"
+        function foo()
+            local l = 0
+            return function()
+                l = l + 1
+                return l
+            end
+        end
+
+        x = foo()
+        x()
+        x()
+        return x()
+    "#);
+    assert_eq!(x, Ok(Value::Number(3.0)));
+
+    let x = run_test_script(r#"
+        function foo()
+            return function()
+                l = l + 1
+                return l
+            end
+            local l = 0
+        end
+
+        x = foo()
+        x()
+        x()
+        return x()
+    "#);
+    assert_eq!(x, Err(LuaError::InvalidArithmetic(Value::Nil)));
+}
+
+#[test]
 fn test_index_error() {
     assert_eq!(run_test_script("true.x"), Err(LuaError::InvalidIndex(Value::Boolean(true))));
 }
