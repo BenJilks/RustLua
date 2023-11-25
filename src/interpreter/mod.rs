@@ -89,11 +89,7 @@ impl Interpreter {
             None => 1.0,
         };
 
-        loop {
-            if value > limit {
-                break;
-            }
-
+        while value <= limit {
             scope.put(name.to_owned(), Value::Number(value));
             if let Some(value) = self.execute_body(scope, body)? {
                 return Ok(Some(value));
