@@ -29,17 +29,21 @@ impl Interpreter {
         let program = self.parser.parse(source).unwrap();
 
         let mut scope = Scope::default();
-        for statement in program {
-            if let Some(value) = self.execute_statement(&mut scope, &statement)? {
-                return Ok(value)
-            }
-        }
-
-        Ok(Value::Nil)
+        Ok(self.execute_body(&mut scope, &program)?.unwrap_or(Value::Nil))
     }
 
     pub fn define(&mut self, name: &str, func: fn(Vec<Value>) -> Value) {
         self.global_scope.put(name.to_owned(), Value::NativeFunction(func));
+    }
+
+    fn execute_body(&mut self, scope: &mut Scope, body: &Vec<Statement>) -> Result<Option<Value>> {
+        for statement in body {
+            if let Some(value) = self.execute_statement(scope, &statement)? {
+                return Ok(Some(value))
+            }
+        }
+
+        Ok(None)
     }
 
     fn execute_statement(&mut self, scope: &mut Scope, statement: &Statement) -> Result<Option<Value>> {
@@ -49,7 +53,17 @@ impl Interpreter {
             Statement::Return(value) => Some(self.execute_expression(scope, value)?),
             Statement::Local(name, value) => { self.execute_local(scope, name, value)?; None },
             Statement::Function(function) => { self.execute_function(scope, function); None },
+            Statement::If(condition, then) => self.execute_if(scope, condition, then)?,
         })
+    }
+
+    fn execute_if(&mut self, scope: &mut Scope, condition: &Box<Expression>, then: &Vec<Statement>) -> Result<Option<Value>> {
+        let evaluated_condition = self.execute_expression(scope, condition)?;
+        if evaluated_condition == Value::Boolean(true) {
+            self.execute_body(scope, then)
+        } else {
+            Ok(None)
+        }
     }
 
     fn execute_local(&mut self, scope: &mut Scope, name: &str, value: &Box<Expression>) -> Result<()> {
@@ -241,12 +255,6 @@ impl Interpreter {
             function_scope.put(parameter.to_owned(), self.execute_expression(scope, argument)?);
         }
 
-        for statement in body {
-            if let Some(return_value) = self.execute_statement(&mut function_scope, &statement)? {
-                return Ok(return_value);
-            }
-        }
-
-        Ok(Value::Nil)
+        Ok(self.execute_body(&mut function_scope, body)?.unwrap_or(Value::Nil))
     }
 }

@@ -11,7 +11,9 @@ mod test;
 
 fn main() -> interpreter::Result<()> {
     let test_program = r#"
-        {} + 1
+        if 1 == 1 then
+            print(21)
+        end
     "#;
 
     let mut interpreter = Interpreter::new();

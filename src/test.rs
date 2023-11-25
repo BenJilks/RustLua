@@ -103,6 +103,23 @@ fn test_captures() {
 }
 
 #[test]
+fn test_if() {
+    let x = run_test_script(r#"
+        if true then
+            return 1
+        end
+    "#);
+    assert_eq!(x, Ok(Value::Number(1.0)));
+
+    let x = run_test_script(r#"
+        if false then
+            return 1
+        end
+    "#);
+    assert_eq!(x, Ok(Value::Nil));
+}
+
+#[test]
 fn test_index_error() {
     assert_eq!(run_test_script("true.x"), Err(LuaError::InvalidIndex(Value::Boolean(true))));
 }

@@ -10,6 +10,7 @@ pub Program: Program = {
 Statement: Statement = {
     "return" <e:Expression> => Statement::Return(e),
     "local" <Identifier> "=" <Expression> => Statement::Local(<>),
+    "if" <Expression> "then" <(<Statement>)*> "end" => Statement::If(<>),
     "function" <name:Identifier> "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
         Statement::Function(Function { name, parameters, body }),
 
