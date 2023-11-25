@@ -15,7 +15,7 @@ pub enum Statement {
     Local(String, Box<Expression>),
     Expression(Box<Expression>),
     Function(Function),
-    If(Box<Expression>, Vec<Statement>),
+    If(Box<Expression>, Vec<Statement>, Vec<(Box<Expression>, Vec<Statement>)>, Option<Vec<Statement>>),
 }
 
 #[derive(Debug, PartialEq, Clone)]

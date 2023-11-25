@@ -110,6 +110,18 @@ fn test_if() {
     assert_eq!(run_test_script("if 1 then return 1 end"), Ok(Value::Number(1.0)));
     assert_eq!(run_test_script("if {} then return 1 end"), Ok(Value::Number(1.0)));
     assert_eq!(run_test_script("if \"test\" then return 1 end"), Ok(Value::Number(1.0)));
+
+    assert_eq!(run_test_script(r#"
+        if 1 == 2 then
+            return 1
+        elseif 1 == 3 then
+            return 2
+        elseif 1 == 1 then
+            return 3
+        else
+            return 4
+        end
+    "#), Ok(Value::Number(3.0)));
 }
 
 #[test]

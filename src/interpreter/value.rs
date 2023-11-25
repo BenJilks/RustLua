@@ -58,6 +58,13 @@ impl Value {
             Self::Table(_) => "table",
         }
     }
+
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Self::Boolean(false) | Self::Nil => false,
+            _ => true,
+        }
+    }
 }
 
 #[derive(Default, Debug, PartialEq, Clone)]

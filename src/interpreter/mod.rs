@@ -53,15 +53,31 @@ impl Interpreter {
             Statement::Return(value) => Some(self.execute_expression(scope, value)?),
             Statement::Local(name, value) => { self.execute_local(scope, name, value)?; None },
             Statement::Function(function) => { self.execute_function(scope, function); None },
-            Statement::If(condition, then) => self.execute_if(scope, condition, then)?,
+            Statement::If(condition, then, elseif, else_) => self.execute_if(scope, condition, then, elseif, else_)?,
         })
     }
 
-    fn execute_if(&mut self, scope: &mut Scope, condition: &Box<Expression>, then: &Vec<Statement>) -> Result<Option<Value>> {
+    fn execute_if(&mut self,
+                  scope: &mut Scope,
+                  condition: &Box<Expression>,
+                  then: &Vec<Statement>,
+                  elseif: &Vec<(Box<Expression>, Vec<Statement>)>,
+                  else_: &Option<Vec<Statement>>) -> Result<Option<Value>> {
         let evaluated_condition = self.execute_expression(scope, condition)?;
-        match evaluated_condition {
-            Value::Boolean(false) | Value::Nil => Ok(None),
-            _ => self.execute_body(scope, then),
+        if evaluated_condition.is_truthy() {
+            return self.execute_body(scope, then);
+        }
+
+        for (condition, then) in elseif {
+            let evaluated_condition = self.execute_expression(scope, condition)?;
+            if evaluated_condition.is_truthy() {
+                return self.execute_body(scope, then);
+            }
+        }
+
+        match else_ {
+            Some(body) => self.execute_body(scope, body),
+            None => Ok(None),
         }
     }
 
