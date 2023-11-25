@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Program, Function, Statement, Expression, Term, Operation};
+use crate::ast::{Program, Function, Statement, Expression, Term, Operation, TableConstructionIndex};
 
 grammar;
 
@@ -81,7 +81,21 @@ Term: Box<Expression> = {
     <s:String> => Box::new(Expression::Term(Term::String(s))),
     <b:Boolean> => Box::new(Expression::Term(Term::Boolean(b))),
     <v:Identifier> => Box::new(Expression::Term(Term::Variable(v))),
-    "{" "}" => Box::new(Expression::Term(Term::Table))
+    <TableLiteral>
+}
+
+TableIndex: TableConstructionIndex = {
+    "[" <Expression> "]" => TableConstructionIndex::Value(<>),
+    <Identifier> => TableConstructionIndex::Name(<>),
+}
+
+TableItem = <(<TableIndex> "=")?> <Expression>;
+TableLiteral: Box<Expression> = {
+    "{" <items: (<TableItem> ",")*> <last: (<TableItem>)?> "}" => {
+        let mut items = items;
+        items.extend(last);
+        Box::new(Expression::Term(Term::Table(items)))
+    },
 }
 
 Boolean: bool = {
@@ -90,5 +104,6 @@ Boolean: bool = {
 }
 
 Number: f64 = <s:r"(\d+\.\d*)|(\d*\.\d+)|(\d+)"> => f64::from_str(s).unwrap();
-String: String = <s:r#"".*""#> => s[1..s.len()-1].to_owned();
+String: String = <s:r#""[^"]*""#> => s[1..s.len()-1].to_owned();
 Identifier: String = <s:r"[a-zA-Z_][a-zA-Z0-9_]*"> => s.to_owned();
+

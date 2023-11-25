@@ -45,5 +45,13 @@ pub enum Term {
     String(String),
     Boolean(bool),
     Variable(String),
-    Table,
+
+    Table(Vec<(Option<TableConstructionIndex>, Box<Expression>)>),
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TableConstructionIndex {
+    Name(String),
+    Value(Box<Expression>),
+}
+

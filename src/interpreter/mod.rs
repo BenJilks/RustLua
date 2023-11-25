@@ -1,9 +1,8 @@
-use crate::ast::{Statement, Expression, Term, Operation, Function};
+use crate::ast::{Statement, Expression, Term, Operation, Function, TableConstructionIndex};
 use crate::lua_parser;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
-use value::{Scope, Index, FunctionCapture};
+use value::{Scope, Index, Table, FunctionCapture};
 
 pub use value::Value;
 pub use error::LuaError;
@@ -148,7 +147,7 @@ impl Interpreter {
 
     fn execute_expression(&mut self, scope: &mut Scope, expression: &Box<Expression>) -> Result<Value> {
         Ok(match expression.as_ref() {
-            Expression::Term(term) => self.execute_term(scope, term),
+            Expression::Term(term) => self.execute_term(scope, term)?,
             Expression::Binary(lhs, operation, rhs) => {
                 let lhs = self.execute_expression(scope, lhs)?;
                 let rhs = self.execute_expression(scope, rhs)?;
@@ -259,8 +258,8 @@ impl Interpreter {
         }
     }
 
-    fn execute_term(&mut self, scope: &mut Scope, term: &Term) -> Value {
-        match term {
+    fn execute_term(&mut self, scope: &mut Scope, term: &Term) -> Result<Value> {
+        Ok(match term {
             Term::Number(n) => Value::Number(*n),
             Term::String(s) => Value::String(s.to_owned()),
             Term::Boolean(b) => Value::Boolean(*b),
@@ -269,12 +268,32 @@ impl Interpreter {
                     .unwrap_or(self.global_scope.get(identifier)
                     .unwrap_or(Value::Nil))
             },
-            Term::Table => self.execute_construct_table(),
-        }
+            Term::Table(items) => self.execute_construct_table(scope, items)?,
+        })
     }
 
-    fn execute_construct_table(&self) -> Value {
-        Value::Table(Rc::new(RefCell::new(HashMap::new())))
+    fn execute_construct_table(&mut self,
+                               scope: &mut Scope,
+                               items: &Vec<(Option<TableConstructionIndex>, Box<Expression>)>) -> Result<Value> {
+        let mut table = Table::default();
+        let mut current_numeric_index = 1i32;
+
+        for (index, value) in items {
+            let value = self.execute_expression(scope, value)?;
+            let index = match index {
+                Some(TableConstructionIndex::Name(name)) => Index::Name(name.to_owned()),
+                Some(TableConstructionIndex::Value(index)) => self.evaluate_index(scope, index)?,
+                None => {
+                    let index = Index::Number(current_numeric_index);
+                    current_numeric_index += 1;
+                    index
+                },
+            };
+
+            table.insert(index, value);
+        }
+
+        Ok(Value::Table(Rc::new(RefCell::new(table))))
     }
 
     fn execute_call<'a>(&mut self,

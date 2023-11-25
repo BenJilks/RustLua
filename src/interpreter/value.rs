@@ -13,7 +13,7 @@ pub enum Index {
     Number(i32),
 }
 
-type Table = HashMap<Index, Value>;
+pub type Table = HashMap<Index, Value>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FunctionCapture {

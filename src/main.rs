@@ -11,9 +11,9 @@ mod test;
 
 fn main() -> interpreter::Result<()> {
     let test_program = r#"
-        for i = 0, 10, 2 do
-            print(i)
-        end
+        print({ a = 1, b = 2 })
+        print({ "a", "b" })
+        print({ [0] = "a", [4] = "b" })
     "#;
 
     let mut interpreter = Interpreter::new();
