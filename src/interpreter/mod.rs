@@ -66,10 +66,10 @@ impl Interpreter {
                 let lhs = self.execute_expression(scope, lhs)?;
                 let rhs = self.execute_expression(scope, rhs)?;
                 match operation {
-                    Operation::Add => value::execute_arithmetic_operation(lhs, rhs, |a, b| a + b),
-                    Operation::Subtract => value::execute_arithmetic_operation(lhs, rhs, |a, b| a - b),
-                    Operation::Multiply => value::execute_arithmetic_operation(lhs, rhs, |a, b| a * b),
-                    Operation::Divide => value::execute_arithmetic_operation(lhs, rhs, |a, b| a / b),
+                    Operation::Add => value::execute_arithmetic_operation(lhs, rhs, |a, b| a + b)?,
+                    Operation::Subtract => value::execute_arithmetic_operation(lhs, rhs, |a, b| a - b)?,
+                    Operation::Multiply => value::execute_arithmetic_operation(lhs, rhs, |a, b| a * b)?,
+                    Operation::Divide => value::execute_arithmetic_operation(lhs, rhs, |a, b| a / b)?,
 
                     Operation::Equals => value::execute_logic_operation(lhs, rhs, |a, b| a == b),
                 }

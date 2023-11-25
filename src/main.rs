@@ -8,7 +8,7 @@ mod interpreter;
 
 fn main() -> interpreter::Result<()> {
     let test_program = r#"
-        x()
+        {} + 1
     "#;
 
     let parser = lua_parser::ProgramParser::new();

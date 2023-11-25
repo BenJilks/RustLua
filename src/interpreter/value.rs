@@ -4,6 +4,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use core::fmt;
 
+use super::error::LuaError;
+use super::Result;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Index {
     Name(String),
@@ -81,23 +84,23 @@ impl Scope {
 
 pub fn execute_arithmetic_operation(lhs: Value,
                                     rhs: Value,
-                                    number_operation: fn(f64, f64) -> f64) -> Value {
+                                    number_operation: fn(f64, f64) -> f64) -> Result<Value> {
     match lhs {
-        Value::Nil => Value::Nil,
+        Value::Nil => Err(LuaError::InvalidArithmetic(lhs)),
         Value::Number(lhs_n) => match rhs {
-            Value::Nil => Value::Nil,
-            Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
-            Value::String(_) => Value::Nil,
-            Value::Boolean(_) => Value::Nil,
-            Value::Table(_) => Value::Nil,
-            Value::Function(_) => Value::Nil,
-            Value::NativeFunction(_) => Value::Nil,
+            Value::Nil => Err(LuaError::InvalidArithmetic(rhs)),
+            Value::Number(rhs_n) => Ok(Value::Number(number_operation(lhs_n, rhs_n))),
+            Value::String(_) => todo!("Implement string, number operations"),
+            Value::Boolean(_) => Err(LuaError::InvalidArithmetic(rhs)),
+            Value::Table(_) => Err(LuaError::InvalidArithmetic(rhs)),
+            Value::Function(_) => Err(LuaError::InvalidArithmetic(rhs)),
+            Value::NativeFunction(_) => Err(LuaError::InvalidArithmetic(rhs)),
         },
-        Value::String(_) => Value::Nil,
-        Value::Boolean(_) => Value::Nil,
-        Value::Table(_) => Value::Nil,
-        Value::Function(_) => Value::Nil,
-        Value::NativeFunction(_) => Value::Nil,
+        Value::String(_) => todo!("Implement string, string operations"),
+        Value::Boolean(_) => Err(LuaError::InvalidArithmetic(lhs)),
+        Value::Table(_) => Err(LuaError::InvalidArithmetic(lhs)),
+        Value::Function(_) => Err(LuaError::InvalidArithmetic(lhs)),
+        Value::NativeFunction(_) => Err(LuaError::InvalidArithmetic(lhs)),
     }
 }
 
