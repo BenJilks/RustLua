@@ -24,6 +24,7 @@ pub enum Value {
     Nil,
     Number(i32),
     String(String),
+    Boolean(bool),
     Function(Rc<FunctionCapture>),
     Table(Rc<RefCell<Table>>),
     NativeFunction(fn(Vec<Value>) -> Value),
@@ -35,6 +36,7 @@ impl fmt::Display for Value {
             Value::Nil => write!(f, "<nil>"),
             Value::Number(n) => write!(f, "{}", n),
             Value::String(s) => write!(f, "{}", s),
+            Value::Boolean(b) => write!(f, "{}", b),
             Value::Table(table) => write!(f, "{:?}", table.borrow()),
             Value::Function(_) => write!(f, "<function>"),
             Value::NativeFunction(_) => write!(f, "<native function>"),
@@ -213,6 +215,7 @@ impl Interpreter {
         match term {
             Term::Number(n) => Value::Number(*n),
             Term::String(s) => Value::String(s.to_owned()),
+            Term::Boolean(b) => Value::Boolean(*b),
             Term::Variable(identifier) => {
                 scope.get(identifier)
                     .unwrap_or(self.global_scope.get(identifier)
@@ -286,11 +289,13 @@ fn execute_arithmetic_operation(lhs: Value,
             Value::Nil => Value::Nil,
             Value::Number(rhs_n) => Value::Number(number_operation(lhs_n, rhs_n)),
             Value::String(_) => Value::Nil,
+            Value::Boolean(_) => Value::Nil,
             Value::Table(_) => Value::Nil,
             Value::Function(_) => Value::Nil,
             Value::NativeFunction(_) => Value::Nil,
         },
         Value::String(_) => Value::Nil,
+        Value::Boolean(_) => Value::Nil,
         Value::Table(_) => Value::Nil,
         Value::Function(_) => Value::Nil,
         Value::NativeFunction(_) => Value::Nil,

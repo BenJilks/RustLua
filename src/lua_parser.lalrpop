@@ -67,8 +67,14 @@ Tier<Op, NextTier>: Box<Expression> = {
 Term: Box<Expression> = {
     <n:Number> => Box::new(Expression::Term(Term::Number(n))),
     <s:String> => Box::new(Expression::Term(Term::String(s))),
+    <b:Boolean> => Box::new(Expression::Term(Term::Boolean(b))),
     <v:Identifier> => Box::new(Expression::Term(Term::Variable(v))),
     "{" "}" => Box::new(Expression::Term(Term::Table))
+}
+
+Boolean: bool = {
+    "true" => true,
+    "false" => false,
 }
 
 Number: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();

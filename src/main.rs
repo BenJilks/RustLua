@@ -8,20 +8,8 @@ mod interpreter;
 
 fn main() {
     let test_program = r#"
-        function x()
-            local test = 0
-
-            return function()
-                test = test + 1
-                return test
-            end
-        end
-
-        test = x()
-        print(test())
-        print(test())
-        print(test())
-        print(test())
+        print(true)
+        print(false)
     "#;
 
     let parser = lua_parser::ProgramParser::new();

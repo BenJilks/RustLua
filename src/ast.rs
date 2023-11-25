@@ -39,6 +39,7 @@ pub enum Expression {
 pub enum Term {
     Number(i32),
     String(String),
+    Boolean(bool),
     Variable(String),
     Table,
 }
