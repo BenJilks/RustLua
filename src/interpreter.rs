@@ -22,7 +22,7 @@ pub struct FunctionCapture {
 #[derive(Debug, Clone)]
 pub enum Value {
     Nil,
-    Number(i32),
+    Number(f64),
     String(String),
     Boolean(bool),
     Function(Rc<FunctionCapture>),
@@ -207,7 +207,14 @@ impl Interpreter {
     fn evaluate_index(&mut self, scope: &mut Scope, index: &Box<Expression>) -> Index {
         let evaluated_index = self.execute_expression(scope, index);
         match evaluated_index {
-            Value::Number(n) => Index::Number(n),
+            Value::Number(n) => {
+                if f64::trunc(n) == n {
+                    Index::Number(n as i32)
+                } else {
+                    Index::Name(n.to_string())
+                }
+            },
+
             Value::String(s) => Index::Name(s),
             _ => todo!("Throw error"),
         }
@@ -284,7 +291,7 @@ impl Interpreter {
 
 fn execute_arithmetic_operation(lhs: Value,
                                 rhs: Value,
-                                number_operation: fn(i32, i32) -> i32) -> Value {
+                                number_operation: fn(f64, f64) -> f64) -> Value {
     match lhs {
         Value::Nil => Value::Nil,
         Value::Number(lhs_n) => match rhs {
@@ -306,7 +313,7 @@ fn execute_arithmetic_operation(lhs: Value,
 
 fn execute_logic_operation(lhs: Value,
                            rhs: Value,
-                           number_operation: fn(i32, i32) -> bool) -> Value {
+                           number_operation: fn(f64, f64) -> bool) -> Value {
     match lhs {
         Value::Nil => Value::Nil,
         Value::Number(lhs_n) => match rhs {

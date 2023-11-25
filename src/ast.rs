@@ -39,7 +39,7 @@ pub enum Expression {
 
 #[derive(Debug, Clone)]
 pub enum Term {
-    Number(i32),
+    Number(f64),
     String(String),
     Boolean(bool),
     Variable(String),
