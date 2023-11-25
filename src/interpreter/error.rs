@@ -2,6 +2,7 @@ use core::fmt;
 
 use super::Value;
 
+#[derive(PartialEq)]
 pub enum LuaError {
     InvalidIndex(Value),
     InvalidCall(Value),

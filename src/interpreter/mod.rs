@@ -1,11 +1,12 @@
-use crate::ast::{Program, Statement, Expression, Term, Operation, Function};
+use crate::ast::{Statement, Expression, Term, Operation, Function};
+use crate::lua_parser;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use value::{Scope, Index, FunctionCapture};
-use error::LuaError;
 
 pub use value::Value;
+pub use error::LuaError;
 pub type Result<T> = std::result::Result<T, LuaError>;
 
 mod value;
@@ -13,20 +14,28 @@ mod error;
 
 pub struct Interpreter {
     global_scope: Scope,
+    parser: lua_parser::ProgramParser,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        Interpreter { global_scope: Scope::default() }
+        Interpreter {
+            global_scope: Scope::default(),
+            parser: lua_parser::ProgramParser::new(),
+        }
     }
 
-    pub fn execute(&mut self, program: Program) -> Result<()> {
+    pub fn execute(&mut self, source: &str) -> Result<Value> {
+        let program = self.parser.parse(source).unwrap();
+
         let mut scope = Scope::default();
         for statement in program {
-            self.execute_statement(&mut scope, &statement)?;
+            if let Some(value) = self.execute_statement(&mut scope, &statement)? {
+                return Ok(value)
+            }
         }
 
-        Ok(())
+        Ok(Value::Nil)
     }
 
     pub fn define(&mut self, name: &str, func: fn(Vec<Value>) -> Value) {

@@ -1,14 +1,14 @@
 
 pub type Program = Vec<Statement>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Function {
     pub name: String,
     pub parameters: Vec<String>,
     pub body: Vec<Statement>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Assignment(Box<Expression>, Box<Expression>),
     Return(Box<Expression>),
@@ -17,7 +17,7 @@ pub enum Statement {
     Function(Function),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operation {
     Add,
     Subtract,
@@ -27,7 +27,7 @@ pub enum Operation {
     Equals,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Term(Term),
     Binary(Box<Expression>, Operation, Box<Expression>),
@@ -37,7 +37,7 @@ pub enum Expression {
     Function(Vec<String>, Vec<Statement>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Term {
     Number(f64),
     String(String),

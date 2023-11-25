@@ -15,14 +15,14 @@ pub enum Index {
 
 type Table = HashMap<Index, Value>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FunctionCapture {
     pub parameters: Vec<String>,
     pub body: Vec<Statement>,
     pub capture: Scope,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Value {
     Nil,
     Number(f64),
@@ -60,7 +60,7 @@ impl Value {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct Scope {
     table: HashMap<String, Rc<RefCell<Value>>>,
 }
