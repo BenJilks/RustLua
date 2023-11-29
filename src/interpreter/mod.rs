@@ -154,6 +154,10 @@ impl Interpreter {
                     Operation::Divide => value::execute_arithmetic_operation(lhs, rhs, |a, b| a / b)?,
 
                     Operation::Equals => value::execute_logic_operation(lhs, rhs, |a, b| a == b),
+                    Operation::GraterThan => value::execute_logic_operation(lhs, rhs, |a, b| a > b),
+                    Operation::LessThan => value::execute_logic_operation(lhs, rhs, |a, b| a < b),
+                    Operation::GraterThanEquals => value::execute_logic_operation(lhs, rhs, |a, b| a >= b),
+                    Operation::LessThanEquals  => value::execute_logic_operation(lhs, rhs, |a, b| a <= b),
                 }
             },
 

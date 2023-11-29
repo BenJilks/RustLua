@@ -11,9 +11,9 @@ mod test;
 
 fn main() -> interpreter::Result<()> {
     let test_program = r#"
-        print({ a = 1, b = 2 })
-        print({ "a", "b" })
-        print({ [0] = "a", [4] = "b" })
+        if 2 > 1 then
+            print("test")
+        end
     "#;
 
     let mut interpreter = Interpreter::new();

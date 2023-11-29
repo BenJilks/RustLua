@@ -42,6 +42,10 @@ ParameterList: Vec<String> = {
 LogicExpression = Tier<LogicOperation, ArithmaticExpression>;
 LogicOperation: Operation = {
     "==" => Operation::Equals,
+    ">" => Operation::GraterThan,
+    "<" => Operation::LessThan,
+    ">=" => Operation::GraterThanEquals,
+    "<=" => Operation::LessThanEquals,
 }
 
 ArithmaticExpression = Tier<ExpressionOperation, Factor>;

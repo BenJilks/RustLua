@@ -134,12 +134,20 @@ fn test_numeric_for() {
 
         return x
     ");
-
     assert_eq!(x, Ok(Value::Number(15.0)));
 
     assert_eq!(run_test_script("for i = nil, 0 do end"), Err(LuaError::BadForInitialValue(Value::Nil)));
     assert_eq!(run_test_script("for i = 0, nil do end"), Err(LuaError::BadForLimit(Value::Nil)));
     assert_eq!(run_test_script("for i = 0, 1, nil do end"), Err(LuaError::BadForStep(Value::Nil)));
+}
+
+#[test]
+fn test_logic_operations() {
+    assert_eq!(run_test_script("return 1 == 2"), Ok(Value::Boolean(false)));
+    assert_eq!(run_test_script("return 1 < 2"), Ok(Value::Boolean(true)));
+    assert_eq!(run_test_script("return 1 > 2"), Ok(Value::Boolean(false)));
+    assert_eq!(run_test_script("return 2 <= 2"), Ok(Value::Boolean(true)));
+    assert_eq!(run_test_script("return 1 >= 2"), Ok(Value::Boolean(false)));
 }
 
 #[test]

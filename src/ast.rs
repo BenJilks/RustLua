@@ -27,6 +27,10 @@ pub enum Operation {
     Divide,
 
     Equals,
+    GraterThan,
+    LessThan,
+    GraterThanEquals,
+    LessThanEquals,
 }
 
 #[derive(Debug, PartialEq, Clone)]
