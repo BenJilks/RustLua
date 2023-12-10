@@ -25,46 +25,31 @@ Statement: Statement = {
 }
 
 Expression: Box<Expression> = {
-    "function" "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
-        Box::new(Expression::Function(parameters, body)),
+    #[precedence(level="0")]
+    Term,
 
-    <a:LogicExpression> => a,
-}
+    #[precedence(level="1")]
+    <Expression> "." <Identifier> => Box::new(Expression::Dot(<>)),
+    <Expression> "[" <Expression> "]" => Box::new(Expression::Index(<>)),
+    <Expression> "(" <ArgumentList> ")" => Box::new(Expression::Call(<>)),
 
-ParameterList: Vec<String> = {
-    <parameters: (<Identifier> ",")*> <last:Identifier?> => {
-        let mut parameters = parameters;
-        parameters.extend(last);
-        parameters
-    },
-}
+    #[precedence(level="2")]
+    #[assoc(side="left")]
+    <l:Expression> "==" <r:Expression> => Box::new(Expression::Binary(l, Operation::Equals, r)),
+    <l:Expression> ">" <r:Expression> => Box::new(Expression::Binary(l, Operation::GraterThan, r)),
+    <l:Expression> "<" <r:Expression> => Box::new(Expression::Binary(l, Operation::LessThan, r)),
+    <l:Expression> ">=" <r:Expression> => Box::new(Expression::Binary(l, Operation::GraterThanEquals, r)),
+    <l:Expression> "<=" <r:Expression> => Box::new(Expression::Binary(l, Operation::LessThanEquals, r)),
 
-LogicExpression = Tier<LogicOperation, ArithmaticExpression>;
-LogicOperation: Operation = {
-    "==" => Operation::Equals,
-    ">" => Operation::GraterThan,
-    "<" => Operation::LessThan,
-    ">=" => Operation::GraterThanEquals,
-    "<=" => Operation::LessThanEquals,
-}
+    #[precedence(level="3")]
+    #[assoc(side="left")]
+    <l:Expression> "*" <r:Expression> => Box::new(Expression::Binary(l, Operation::Multiply, r)),
+    <l:Expression> "/" <r:Expression> => Box::new(Expression::Binary(l, Operation::Divide, r)),
 
-ArithmaticExpression = Tier<ExpressionOperation, Factor>;
-ExpressionOperation: Operation = {
-    "+" => Operation::Add,
-    "-" => Operation::Subtract,
-}
-
-Factor = Tier<FactorOperation, Access>;
-FactorOperation: Operation = {
-    "*" => Operation::Multiply,
-    "/" => Operation::Divide,
-}
-
-Access: Box<Expression> = {
-    <Access> "." <Identifier> => Box::new(Expression::Dot(<>)),
-    <Access> "[" <Expression> "]" => Box::new(Expression::Index(<>)),
-    <Access> "(" <ArgumentList> ")" => Box::new(Expression::Call(<>)),
-    Term
+    #[precedence(level="4")]
+    #[assoc(side="left")]
+    <l:Expression> "+" <r:Expression> => Box::new(Expression::Binary(l, Operation::Add, r)),
+    <l:Expression> "-" <r:Expression> => Box::new(Expression::Binary(l, Operation::Subtract, r)),
 }
 
 ArgumentList: Vec<Box<Expression>> = {
@@ -75,17 +60,23 @@ ArgumentList: Vec<Box<Expression>> = {
     }
 }
 
-Tier<Op, NextTier>: Box<Expression> = {
-    Tier<Op, NextTier> Op NextTier => Box::new(Expression::Binary(<>)),
-    NextTier
-}
-
 Term: Box<Expression> = {
+    "function" "(" <parameters:ParameterList> ")" <body: (<Statement>)*> "end" =>
+        Box::new(Expression::Function(parameters, body)),
+
     <n:Number> => Box::new(Expression::Term(Term::Number(n))),
     <s:String> => Box::new(Expression::Term(Term::String(s))),
     <b:Boolean> => Box::new(Expression::Term(Term::Boolean(b))),
     <v:Identifier> => Box::new(Expression::Term(Term::Variable(v))),
-    <TableLiteral>
+    <t:TableLiteral> => t,
+}
+
+ParameterList: Vec<String> = {
+    <parameters: (<Identifier> ",")*> <last:Identifier?> => {
+        let mut parameters = parameters;
+        parameters.extend(last);
+        parameters
+    },
 }
 
 TableIndex: TableConstructionIndex = {
