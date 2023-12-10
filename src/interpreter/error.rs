@@ -1,8 +1,9 @@
 use core::fmt;
+use std::error::Error;
 
 use super::Value;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum LuaError {
     InvalidIndex(Value),
     InvalidCall(Value),
@@ -12,7 +13,7 @@ pub enum LuaError {
     BadForStep(Value),
 }
 
-impl fmt::Debug for LuaError {
+impl fmt::Display for LuaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidIndex(v) => write!(f, "attempt to index a {} value", v.type_name()),
@@ -24,3 +25,5 @@ impl fmt::Debug for LuaError {
         }
     }
 }
+
+impl Error for LuaError {}
