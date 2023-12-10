@@ -11,6 +11,7 @@ mod test;
 
 fn main() -> interpreter::Result<()> {
     let test_program = r#"
+        -- test
         if 2 > 1 then
             print("test")
         end

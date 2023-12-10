@@ -164,3 +164,12 @@ fn test_arithmetic_error() {
 fn test_call_error() {
     assert_eq!(run_test_script("true()"), Err(LuaError::InvalidCall(Value::Boolean(true))));
 }
+
+#[test]
+fn test_comment() {
+    let x = run_test_script(r"
+        -- This is a comment
+        return 21 -- more commentary
+    ");
+    assert_eq!(x, Ok(Value::Number(21.0)));
+}
